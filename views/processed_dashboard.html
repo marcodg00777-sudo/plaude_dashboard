@@ -1,0 +1,277 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard procesado: {{ report.id }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white p-6 rounded-xl shadow border border-gray-200">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard de resultado procesado</h1>
+            <div class="flex gap-2">
+                <button onclick="showRenameDialog()" class="px-3 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-sm font-medium">
+                    ✏️ Renombrar
+                </button>
+                <button onclick="deleteReport()" class="px-3 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm font-medium">
+                    🗑️ Eliminar
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+                <p class="text-xs uppercase tracking-wide text-gray-500">ID</p>
+                <p class="text-sm font-semibold text-gray-800 break-all">{{ report.id }}</p>
+            </div>
+            <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Estado</p>
+                <p class="text-sm font-semibold text-blue-700">{{ report.status }}</p>
+            </div>
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Creado</p>
+                <p class="text-sm text-gray-800">{{ report.created_at }}</p>
+            </div>
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Actualizado</p>
+                <p class="text-sm text-gray-800">{{ report.updated_at }}</p>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Emails origen</p>
+            <div class="flex flex-wrap gap-2 mt-2">
+                {% for eid in report.selected_email_ids %}
+                <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">{{ eid }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+                <h2 class="font-semibold text-gray-900 mb-2">Resumen ejecutivo</h2>
+                <p class="text-sm text-gray-700">{{ report.analysis.summary }}</p>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+                <h2 class="font-semibold text-gray-900 mb-2">Métricas</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-gray-50 border border-gray-100 p-3 rounded">Total tareas<br><span class="font-bold text-gray-800">{{ metrics.total_tasks }}</span></div>
+                    <div class="bg-gray-50 border border-gray-100 p-3 rounded">Completadas<br><span class="font-bold text-gray-800">{{ metrics.completed_tasks }}</span></div>
+                    <div class="bg-gray-50 border border-gray-100 p-3 rounded">Pendientes<br><span class="font-bold text-gray-800">{{ metrics.pending_tasks }}</span></div>
+                    <div class="bg-gray-50 border border-gray-100 p-3 rounded">Personas<br><span class="font-bold text-gray-800">{{ metrics.total_people }}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Puntos importantes</h2>
+            <div class="space-y-2">
+                {% for p in report.analysis.points %}
+                <div class="bg-gray-50 border border-gray-100 rounded-lg p-3">
+                    <span class="text-slate-700 text-sm">• {{ p }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Personas involucradas</h2>
+            <div class="flex flex-wrap gap-2">
+                {% if people %}
+                    {% for person in people %}
+                    <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">{{ person }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span class="text-sm text-gray-500">No se detectaron personas explícitamente.</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold text-gray-900">Tareas</h2>
+                <span class="text-xs text-gray-500">Todos los cambios se persisten</span>
+            </div>
+            
+            <!-- Vista Desktop (Tabla) -->
+            <div class="hidden md:block overflow-x-auto">
+                <table class="min-w-full text-sm text-left border border-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 border-b">#</th>
+                            <th class="px-4 py-2 border-b">Tarea</th>
+                            <th class="px-4 py-2 border-b">Responsable</th>
+                            <th class="px-4 py-2 border-b">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in report.analysis.tasks %}
+                        <tr class="border-b hover:bg-gray-50" data-task-id="{{ task.task_id }}">
+                            <td class="px-4 py-3">{{ loop.index }}</td>
+                            <td class="px-4 py-3">{{ task.task }}</td>
+                            <td class="px-4 py-3">{{ task.assignee or 'Sin asignar' }}</td>
+                            <td class="px-4 py-3">
+                                <label class="inline-flex items-center space-x-2">
+                                    <input type="checkbox" class="task-done-checkbox" data-task-id="{{ task.task_id }}" {% if task.done %}checked{% endif %} onchange="toggleTaskDone('{{ report.id }}', '{{ task.task_id }}', this.checked)">
+                                    <span class="text-xs {% if task.done %}text-green-600 font-semibold{% else %}text-gray-600{% endif %}">{% if task.done %}Completada{% else %}Pendiente{% endif %}</span>
+                                </label>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Vista Móvil (Cards) -->
+            <div class="md:hidden space-y-3">
+                {% for task in report.analysis.tasks %}
+                <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm" data-task-id="{{ task.task_id }}">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <h3 class="text-sm font-semibold text-gray-900 flex-1">{{ task.task }}</h3>
+                        <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{{ loop.index }}</span>
+                    </div>
+
+                    <div class="mb-3 space-y-1">
+                        <p class="text-xs text-gray-600">
+                            <span class="font-medium">Responsable:</span> {{ task.assignee or 'Sin asignar' }}
+                        </p>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <label class="inline-flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="task-done-checkbox w-4 h-4" data-task-id="{{ task.task_id }}" {% if task.done %}checked{% endif %} onchange="toggleTaskDone('{{ report.id }}', '{{ task.task_id }}', this.checked)">
+                            <span class="text-sm {% if task.done %}text-green-600 font-semibold{% else %}text-gray-600{% endif %}">
+                                {% if task.done %}✓ Completada{% else %}○ Pendiente{% endif %}
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="/" class="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Volver a lista</a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Renombrar -->
+<div id="renameModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Renombrar dashboard</h2>
+        <input type="text" id="newNameInput" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4" placeholder="Nuevo nombre" value="{{ report.name or report.id }}">
+        <div class="flex gap-2 justify-end">
+            <button onclick="closeRenameDialog()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">Cancelar</button>
+            <button onclick="saveRename()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function toggleTaskDone(reportId, taskId, done) {
+        try {
+            const response = await fetch(`/api/processed/${reportId}/tasks/${taskId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ done: done })
+            });
+
+            const data = await response.json();
+            if (!response.ok || data.status !== 'success') {
+                alert('Error al actualizar el estado de tarea');
+                console.error(data);
+                return;
+            }
+
+            location.reload();
+        } catch (error) {
+            console.error('Error toggling task done', error);
+            alert('No se pudo actualizar la tarea.');
+        }
+    }
+
+    function showRenameDialog() {
+        document.getElementById('renameModal').classList.remove('hidden');
+        document.getElementById('newNameInput').focus();
+    }
+
+    function closeRenameDialog() {
+        document.getElementById('renameModal').classList.add('hidden');
+    }
+
+    async function saveRename() {
+        const newName = document.getElementById('newNameInput').value.trim();
+        
+        if (!newName) {
+            alert('Por favor ingresa un nombre válido');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/processed/{{ report.id }}/rename`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: newName })
+            });
+
+            const data = await response.json();
+            if (!response.ok || data.status !== 'success') {
+                alert('Error al renombrar el dashboard');
+                console.error(data);
+                return;
+            }
+
+            // Redirigir al nuevo ID si cambió
+            if (data.new_id && data.new_id !== '{{ report.id }}') {
+                window.location.href = `/processed/${data.new_id}`;
+            } else {
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Error saving rename', error);
+            alert('No se pudo renombrar el dashboard.');
+        }
+    }
+
+    async function deleteReport() {
+        if (!confirm('¿Estás seguro? Esta acción no se puede deshacer.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/processed/{{ report.id }}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (!response.ok || data.status !== 'success') {
+                alert('Error al eliminar el dashboard');
+                console.error(data);
+                return;
+            }
+
+            // Redirigir a la página principal
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Error deleting report', error);
+            alert('No se pudo eliminar el dashboard.');
+        }
+    }
+
+    // Cerrar modal al presionar Escape
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeRenameDialog();
+        }
+    });
+</script>
+{% endblock %}
