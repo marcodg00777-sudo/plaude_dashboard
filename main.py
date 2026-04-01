@@ -48,7 +48,11 @@ async def shutdown_event():
 
 
 if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "0.0.0.0")
+
     print("🚀 Iniciando servidor PLAUD Email Manager")
-    print("📍 URL: http://localhost:8000")
-    print("📚 Docs: http://localhost:8000/docs")
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    print(f"📍 URL: http://{host}:{port}")
+    print(f"📚 Docs: http://{host}:{port}/docs")
+    uvicorn.run(app, host=host, port=port)

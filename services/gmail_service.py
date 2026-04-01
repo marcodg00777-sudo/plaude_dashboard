@@ -5,6 +5,7 @@ from email.utils import parsedate_to_datetime
 import html
 import re
 import sys
+import os
 from pathlib import Path
 
 try:
@@ -20,12 +21,22 @@ SECRETS_FILE = "secrets.toml"
 
 
 def load_secrets(path: str = SECRETS_FILE) -> tuple[str, str]:
-    """Carga las credenciales de Gmail desde secrets.toml"""
+    """Carga las credenciales de Gmail desde env o secrets.toml"""
+    # Primero intentar desde variables de entorno (para producción)
+    user_email = os.environ.get("GMAIL_USER", "").strip()
+    app_password = os.environ.get("GMAIL_APP_PASSWORD", "").strip().replace(" ", "")
+
+    if user_email and app_password:
+        if len(app_password) != 16:
+            raise ValueError("La GMAIL_APP_PASSWORD debe tener 16 caracteres sin espacios.")
+        return user_email, app_password
+
+    # Fallback a secrets.toml (para desarrollo local)
     secrets_path = Path(path)
 
     if not secrets_path.exists():
         raise FileNotFoundError(
-            f"No existe el archivo {path}. Créalo en la raíz del proyecto."
+            f"No existe el archivo {path}. Créalo en la raíz del proyecto o configura GMAIL_USER y GMAIL_APP_PASSWORD."
         )
 
     with open(secrets_path, "rb") as f:
@@ -35,15 +46,15 @@ def load_secrets(path: str = SECRETS_FILE) -> tuple[str, str]:
     app_password = data.get("gmail", {}).get("app_password", "").strip().replace(" ", "")
 
     if not user_email:
-        raise ValueError("Falta [email].user en secrets.toml")
+        raise ValueError("Falta GMAIL_USER en env o [email].user en secrets.toml")
 
     if not app_password:
-        raise ValueError("Falta [gmail].app_password en secrets.toml")
+        raise ValueError("Falta GMAIL_APP_PASSWORD en env o [gmail].app_password en secrets.toml")
 
     if len(app_password) != 16:
         raise ValueError(
             "La App Password debe tener 16 caracteres sin espacios. "
-            "Revísala en secrets.toml."
+            "Revísala en secrets.toml o GMAIL_APP_PASSWORD."
         )
 
     return user_email, app_password
