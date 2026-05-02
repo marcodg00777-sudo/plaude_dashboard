@@ -123,7 +123,7 @@ OPENCLAW_AGENTS = [
         "name": "Agente Investigador de Contexto",
         "icon": "🔍",
         "category": "Conocimiento",
-        "status": "beta",
+        "status": "active",
         "description": "Investiga en profundidad los temas discutidos en reuniones y te proporciona contexto adicional, datos relevantes y antecedentes antes de tu próxima sesión.",
         "capabilities": [
             "Busca información actualizada sobre los temas de la reunión",
@@ -136,7 +136,7 @@ OPENCLAW_AGENTS = [
         "name": "Agente de Calendario y Agenda",
         "icon": "📅",
         "category": "Productividad",
-        "status": "beta",
+        "status": "active",
         "description": "Detecta fechas, compromisos y reuniones de seguimiento mencionados en las transcripciones y los propone directamente como eventos en tu agenda.",
         "capabilities": [
             "Reconoce expresiones de tiempo naturales (\"la próxima semana\", \"el lunes\")",
@@ -149,7 +149,7 @@ OPENCLAW_AGENTS = [
         "name": "Agente Analizador de Tendencias",
         "icon": "📊",
         "category": "Análisis",
-        "status": "beta",
+        "status": "active",
         "description": "Analiza el historial de tus reuniones para identificar temas recurrentes, bloqueos del equipo, tiempo invertido por proyecto y patrones de trabajo.",
         "capabilities": [
             "Detecta temas que reaparecen sin resolverse",
@@ -175,7 +175,7 @@ OPENCLAW_AGENTS = [
         "name": "Agente Actualizador de CRM",
         "icon": "🗂️",
         "category": "Ventas",
-        "status": "coming_soon",
+        "status": "active",
         "description": "Extrae información de clientes, proyectos y oportunidades discutidas en reuniones para actualizar automáticamente los registros de tu CRM sin entrada manual.",
         "capabilities": [
             "Identifica menciones de clientes, productos y oportunidades",
@@ -188,7 +188,7 @@ OPENCLAW_AGENTS = [
         "name": "Agente Monitor de Compromisos",
         "icon": "🔔",
         "category": "Productividad",
-        "status": "coming_soon",
+        "status": "active",
         "description": "Monitorea las tareas extraídas de reuniones y envía recordatorios proactivos a los responsables cuando se acercan las fechas límite identificadas.",
         "capabilities": [
             "Envía recordatorios por email o Slack con 24h de antelación",
@@ -201,7 +201,7 @@ OPENCLAW_AGENTS = [
         "name": "Agente Generador de Reportes",
         "icon": "📑",
         "category": "Análisis",
-        "status": "coming_soon",
+        "status": "active",
         "description": "Consolida automáticamente la información de múltiples reuniones en reportes semanales o mensuales profesionales, listos para presentar a directivos o clientes.",
         "capabilities": [
             "Agrupa reuniones por proyecto, cliente o etiqueta",
