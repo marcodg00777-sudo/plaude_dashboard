@@ -16,6 +16,18 @@ def _load_secrets(path: str = "secrets.toml") -> dict:
         return tomllib.load(f)
 
 
+def get_openclaw_api_key() -> str:
+    """Obtiene la API key de OpenClaw desde env o secrets.toml"""
+    key = os.environ.get("OPENCLAW_API_KEY", "").strip()
+    if key:
+        return key
+    data = _load_secrets()
+    key = data.get("openclaw", {}).get("api_key", "").strip()
+    if not key:
+        raise ValueError("No se encontró OPENCLAW_API_KEY en env ni [openclaw].api_key en secrets.toml")
+    return key
+
+
 def get_gemini_api_key() -> str:
     """Obtiene la API key de Gemini desde env o secrets.toml"""
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()

@@ -5,6 +5,7 @@ from pathlib import Path
 import uvicorn
 
 from controller.email_controller import router, start_email_background_thread, setup_jinja2
+from controller.agents_controller import router as agents_router
 
 # Inicializar FastAPI
 app = FastAPI(
@@ -29,8 +30,9 @@ async def add_jinja_env(request, call_next):
     return response
 
 
-# Registrar el router
+# Registrar routers
 app.include_router(router)
+app.include_router(agents_router)
 
 
 @app.on_event("startup")
