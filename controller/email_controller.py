@@ -79,6 +79,152 @@ def start_email_background_thread():
     thread.start()
 
 
+OPENCLAW_AGENTS = [
+    {
+        "name": "Agente Resumen Ejecutivo",
+        "icon": "📋",
+        "category": "Reuniones",
+        "status": "active",
+        "description": "Procesa las transcripciones de PLAUD y genera resúmenes ejecutivos estructurados con los puntos clave, decisiones tomadas y contexto de cada reunión.",
+        "capabilities": [
+            "Extrae los 3-5 puntos más importantes de cada reunión",
+            "Identifica decisiones y acuerdos alcanzados",
+            "Genera un resumen de una línea para el asunto del email",
+        ],
+        "integrations": ["PLAUD", "Gmail", "Gemini"],
+    },
+    {
+        "name": "Agente Gestor de Tareas",
+        "icon": "✅",
+        "category": "Productividad",
+        "status": "active",
+        "description": "Extrae automáticamente todas las tareas y compromisos mencionados en reuniones, les asigna responsables y hace seguimiento del progreso hasta su cierre.",
+        "capabilities": [
+            "Detecta tareas implícitas y explícitas en el texto",
+            "Asigna responsable según contexto de la conversación",
+            "Actualiza el estado de las tareas conforme se completan",
+        ],
+        "integrations": ["PLAUD", "Gemini", "Dashboard"],
+    },
+    {
+        "name": "Agente Redactor de Seguimiento",
+        "icon": "✉️",
+        "category": "Comunicación",
+        "status": "active",
+        "description": "Genera borradores de emails de seguimiento post-reunión con los acuerdos alcanzados, las tareas asignadas y los próximos pasos, listos para enviar con un clic.",
+        "capabilities": [
+            "Redacta el email en el mismo idioma de la reunión",
+            "Incluye lista de tareas con responsables y fechas",
+            "Adapta el tono según el tipo de reunión (cliente, equipo, etc.)",
+        ],
+        "integrations": ["Gmail", "PLAUD", "Gemini"],
+    },
+    {
+        "name": "Agente Investigador de Contexto",
+        "icon": "🔍",
+        "category": "Conocimiento",
+        "status": "beta",
+        "description": "Investiga en profundidad los temas discutidos en reuniones y te proporciona contexto adicional, datos relevantes y antecedentes antes de tu próxima sesión.",
+        "capabilities": [
+            "Busca información actualizada sobre los temas de la reunión",
+            "Genera fichas de contexto por tema o persona",
+            "Propone preguntas clave para la siguiente reunión",
+        ],
+        "integrations": ["Web", "PLAUD", "Gemini"],
+    },
+    {
+        "name": "Agente de Calendario y Agenda",
+        "icon": "📅",
+        "category": "Productividad",
+        "status": "beta",
+        "description": "Detecta fechas, compromisos y reuniones de seguimiento mencionados en las transcripciones y los propone directamente como eventos en tu agenda.",
+        "capabilities": [
+            "Reconoce expresiones de tiempo naturales (\"la próxima semana\", \"el lunes\")",
+            "Crea invitaciones con los participantes mencionados",
+            "Detecta conflictos con eventos existentes",
+        ],
+        "integrations": ["Google Calendar", "PLAUD", "Gmail"],
+    },
+    {
+        "name": "Agente Analizador de Tendencias",
+        "icon": "📊",
+        "category": "Análisis",
+        "status": "beta",
+        "description": "Analiza el historial de tus reuniones para identificar temas recurrentes, bloqueos del equipo, tiempo invertido por proyecto y patrones de trabajo.",
+        "capabilities": [
+            "Detecta temas que reaparecen sin resolverse",
+            "Muestra qué personas o proyectos consumen más tiempo",
+            "Genera reportes de tendencias semanales y mensuales",
+        ],
+        "integrations": ["PLAUD", "Dashboard", "Gemini"],
+    },
+    {
+        "name": "Agente Traductor Multilingüe",
+        "icon": "🌐",
+        "category": "Comunicación",
+        "status": "active",
+        "description": "Traduce transcripciones y resúmenes de reuniones al idioma que necesites para compartir los resultados con equipos o clientes internacionales.",
+        "capabilities": [
+            "Soporta más de 50 idiomas con alta fidelidad",
+            "Mantiene el contexto técnico y los nombres propios",
+            "Genera versiones paralelas en múltiples idiomas a la vez",
+        ],
+        "integrations": ["PLAUD", "Gmail", "Gemini"],
+    },
+    {
+        "name": "Agente Actualizador de CRM",
+        "icon": "🗂️",
+        "category": "Ventas",
+        "status": "coming_soon",
+        "description": "Extrae información de clientes, proyectos y oportunidades discutidas en reuniones para actualizar automáticamente los registros de tu CRM sin entrada manual.",
+        "capabilities": [
+            "Identifica menciones de clientes, productos y oportunidades",
+            "Crea o actualiza contactos y cuentas en el CRM",
+            "Registra notas de reunión en el historial del cliente",
+        ],
+        "integrations": ["HubSpot", "Salesforce", "PLAUD"],
+    },
+    {
+        "name": "Agente Monitor de Compromisos",
+        "icon": "🔔",
+        "category": "Productividad",
+        "status": "coming_soon",
+        "description": "Monitorea las tareas extraídas de reuniones y envía recordatorios proactivos a los responsables cuando se acercan las fechas límite identificadas.",
+        "capabilities": [
+            "Envía recordatorios por email o Slack con 24h de antelación",
+            "Escala alertas si una tarea lleva más de X días sin moverse",
+            "Genera un digest diario de compromisos pendientes",
+        ],
+        "integrations": ["Gmail", "Slack", "Dashboard"],
+    },
+    {
+        "name": "Agente Generador de Reportes",
+        "icon": "📑",
+        "category": "Análisis",
+        "status": "coming_soon",
+        "description": "Consolida automáticamente la información de múltiples reuniones en reportes semanales o mensuales profesionales, listos para presentar a directivos o clientes.",
+        "capabilities": [
+            "Agrupa reuniones por proyecto, cliente o etiqueta",
+            "Incluye métricas de tareas completadas vs pendientes",
+            "Exporta en PDF o Google Slides con un clic",
+        ],
+        "integrations": ["PLAUD", "Google Drive", "Gemini"],
+    },
+]
+
+
+@router.get("/agents", response_class=HTMLResponse)
+async def get_agents_view(request: Request):
+    """Renderiza la vista de agentes OpenClaw"""
+    try:
+        jinja_env = request.app.jinja_env
+        template = jinja_env.get_template("agents_view.html")
+        html = template.render(agents=OPENCLAW_AGENTS)
+        return html
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/", response_class=HTMLResponse)
 async def get_main_view(request: Request):
     """Renderiza la vista principal con la lista de correos"""
