@@ -1,5 +1,6 @@
 import json
 import re
+import time
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, ValidationError
@@ -14,6 +15,13 @@ except ModuleNotFoundError:
 from services.config import get_gemini_api_key
 
 MODEL_NAME = "gemini-3.1-flash-lite-preview"
+
+_MAX_RETRIES = 3
+_RETRY_DELAYS = [5, 10, 20]  # segundos entre reintentos
+
+
+class GeminiQuotaError(RuntimeError):
+    """Se lanza cuando Gemini agota el cupo despues de todos los reintentos."""
 
 
 class TaskItem(BaseModel):
@@ -33,19 +41,19 @@ def _build_prompt(email_texts: List[str]) -> str:
     joined = "\n\n---\n\n".join(email_texts)
 
     prompt = f"""
-Eres un extractor de inteligencia de reuniones en español.
-Recibes texto de 1 o más emails de PLAUD.AI (transcripciones, resúmenes, metadatos).
-Genera SOLO JSON válido con la forma:
+Eres un extractor de inteligencia de reuniones en espanol.
+Recibes texto de 1 o mas emails de PLAUD.AI (transcripciones, resumenes, metadatos).
+Genera SOLO JSON valido con la forma:
 {{
   "summary": "string corto - ejecutivo",
   "points": ["punto principal 1", "punto principal 2"],
   "tasks": [
-    {{"task":"acción", "assignee":"nombre o null", "done":true|false|null}}
+    {{"task":"accion", "assignee":"nombre o null", "done":true|false|null}}
   ]
 }}
 
 Reglas:
-- No inventes información.
+- No inventes informacion.
 - Si el responsable no es claro, usa null.
 - Si el estado de done no se puede inferir, usa null.
 - Consolida y deduplica contenido repetido.
@@ -73,13 +81,19 @@ def _extract_json(raw_text: str) -> str:
     return raw_text
 
 
+def _is_quota_error(exc: Exception) -> bool:
+    """Detecta errores 429 / RESOURCE_EXHAUSTED del SDK de Google."""
+    msg = str(exc)
+    return "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower()
+
+
 def process_emails(email_texts: List[str]) -> GeminiAnalysis:
     if not email_texts:
         raise ValueError("Debe proporcionar al menos un email para procesar")
 
     if genai is None:
         raise RuntimeError(
-            "google-genai no está instalado. Ejecuta: pip install google-genai"
+            "google-genai no esta instalado. Ejecuta: pip install google-genai"
         )
 
     api_key = get_gemini_api_key()
@@ -89,19 +103,49 @@ def process_emails(email_texts: List[str]) -> GeminiAnalysis:
 
     if types is None:
         raise RuntimeError(
-            "google-genai no está instalado correctamente; faltan tipos. Ejecuta: pip install google-genai"
+            "google-genai no esta instalado correctamente; faltan tipos. Ejecuta: pip install google-genai"
         )
 
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.0,
-            max_output_tokens=1024,
-            top_p=0.95,
-            response_mime_type="application/json",
-        ),
-    )
+    last_exc: Exception = RuntimeError("No se pudo contactar a Gemini")
+
+    for attempt in range(_MAX_RETRIES):
+        try:
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.0,
+                    max_output_tokens=1024,
+                    top_p=0.95,
+                    response_mime_type="application/json",
+                ),
+            )
+            break  # exito — salir del loop de reintentos
+        except Exception as exc:
+            last_exc = exc
+            if _is_quota_error(exc) and attempt < _MAX_RETRIES - 1:
+                wait = _RETRY_DELAYS[attempt]
+                print(
+                    f"[Gemini] Cupo agotado (intento {attempt + 1}/{_MAX_RETRIES}). "
+                    f"Reintentando en {wait}s..."
+                )
+                time.sleep(wait)
+                continue
+            # Error no recuperable o ultimo intento
+            if _is_quota_error(exc):
+                raise GeminiQuotaError(
+                    f"Gemini: cupo de API agotado despues de {_MAX_RETRIES} intentos. "
+                    "Revisa tu plan en https://ai.google.dev/gemini-api/docs/rate-limits"
+                ) from exc
+            raise
+    else:
+        # El loop termino sin break (todos los reintentos fallaron con quota)
+        if _is_quota_error(last_exc):
+            raise GeminiQuotaError(
+                f"Gemini: cupo de API agotado despues de {_MAX_RETRIES} intentos. "
+                "Revisa tu plan en https://ai.google.dev/gemini-api/docs/rate-limits"
+            ) from last_exc
+        raise last_exc
 
     raw_text = response.text.strip()
     cleaned_text = _extract_json(raw_text)
